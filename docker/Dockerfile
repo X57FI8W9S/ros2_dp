@@ -17,14 +17,13 @@ RUN apt-get update && apt-get install -y \
     vim \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
-RUN apt-get update -y && apt-get install -y mono
+RUN apt-get update -y && apt-get install -y nano
 
 # Create workspace
 RUN mkdir -p /root/ros2_ws
 WORKDIR /root/ros2_ws/src
-COPY ../src/dp /root/ros2_ws/src/dp
-#COPY src/mycobot.repos /root/ros2_ws/src/mycobot.repos
-#RUN vcs import < mycobot.repos
+# Copy the entire src directory from the root of the workspace
+COPY ./src /root/ros2_ws/src
 
 # Install dependencies
 RUN apt-get update -y && apt-get install -y \
@@ -51,7 +50,7 @@ RUN source /opt/ros/${ROS_DISTRO}/setup.bash \
   && colcon build --symlink-install
 
 # Configure entrypoint
-COPY ./entrypoint.sh /
+COPY ./docker/entrypoint.sh /
 RUN chmod +x  /entrypoint.sh
 ENTRYPOINT [ "/entrypoint.sh" ]
 CMD ["bash"]

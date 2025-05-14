@@ -2,8 +2,8 @@ services:
   ros2-desktop:
     image: humble-ros-desktop:overlay
     build:
-      context: .
-      dockerfile: ./Dockerfile
+      context: ../
+      dockerfile: ./docker/Dockerfile
       args:
         ROS_DISTRO: jazzy
       target: base
@@ -34,5 +34,6 @@ services:
         - ROBOT_MODEL=dp
     command: bash -c "source /entrypoint.sh && exec bash" 
     volumes:
-      - ../src/dp:/root/ros2_ws/src/dp
+      - ./src/dp:/root/ros2_ws/src/dp
       
+ 

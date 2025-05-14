@@ -50,16 +50,16 @@ Deberia inmediatamente inicializar la simulacion con el panel de control de RViz
 Reconstruimos la imagen e inicializamos una nueva imagen:
 ```
 $ docker compose build --no-cache
-$ xhost + && docker compose up dev --force-recreate
+$ xhost + && docker compose up dp_dev --force-recreate
 ```
 
 En este caso no se levanta ros2, por lo que se debe hacer manualmente desde una segunda consola, con la opción de levantar otras simulaciones tales como el péndulo doble corriendo sobre un escritorio sin estar fijo en su base.
 
 En una terminal separada nos introducimos en el container.
 ```
-$ docker exec -it robotica_cese_env-dev-1 /bin/bash
+$ docker exec -it ros2_ws-dp_dev-1 /bin/bash
 ```
 
-En esta forma, cualquier cambio en la carpeta `./src/dp` se reflejan en la carpeta `/root/ros2_ws/src/dp` adentro de la imagen.
+En esta forma, cualquier cambio en la carpeta `./src/dp` se reflejan en la carpeta `/root/ros2_ws/src/dp` adentro de la contenedor.
 Asi podemos hacer el cambio que querramos dentro de esa carpeta y ejecutar los cambios en el sistema con el comando desde la segunda terminal:
 
