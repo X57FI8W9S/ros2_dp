@@ -32,8 +32,8 @@ services:
     image: humble-ros-desktop:base
     environment:
         - ROBOT_MODEL=dp
-    command: bash -c "source /entrypoint.sh && exec bash" 
+    command: bash -c "source /entrypoint.sh; exec bash" 
     volumes:
-      - ./src/dp:/root/ros2_ws/src/dp
+      - ../src/dp:/root/ros2_ws/src/dp
       
  
