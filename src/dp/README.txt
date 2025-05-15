@@ -69,6 +69,7 @@ ros2 run plotjuggler plotjuggler
 #*******************************************************
 # Cambiar ganancias dinámicamente
 ros2 param set /position_controller gains.joint1.p 120.0
+ros2 param get /position_controller gains
 
 #*******************************************************
 # Ajuste por ZN 

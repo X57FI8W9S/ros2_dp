@@ -39,6 +39,11 @@ install(PROGRAMS
 )
 
 install(PROGRAMS
+  scripts/gui_controller.py
+  DESTINATION lib/${PROJECT_NAME}
+)
+
+install(PROGRAMS
   scripts/toggle_controller.py
   DESTINATION lib/${PROJECT_NAME}
 )

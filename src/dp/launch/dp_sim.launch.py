@@ -86,9 +86,9 @@ def generate_launch_description():
         output='screen',
         arguments=['-topic', 'robot_description',
                     '-name', 'double_pendulum', '-allow_renaming', 'true'
-                    '-x', '0',      # Coordenada X
-                    '-y', '0',      # Coordenada Y
-                    '-z', '1.0'     # Coordenada Z (altura del escritorio)
+                    '-x', '0.0',      # Coordenada X
+                    '-y', '0.0',      # Coordenada Y
+                    '-z', '0.55'     # Coordenada Z (altura del escritorio)
                     ],
 
     )
@@ -176,7 +176,7 @@ def generate_launch_description():
          # Declarar el argumento del mundo con un valor por defecto
         DeclareLaunchArgument(
             'world_name',
-            default_value='double_pendulum.world',
+            default_value='dp_mundo_vacio.world',
             description='Nombre del archivo del mundo para Gazebo'
         ),
 
