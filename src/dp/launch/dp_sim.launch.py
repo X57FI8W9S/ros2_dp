@@ -15,19 +15,32 @@
 import os
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription
+from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription, SetEnvironmentVariable
 from launch.actions import RegisterEventHandler
 from launch.event_handlers import OnProcessExit
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import Command, FindExecutable, LaunchConfiguration, PathJoinSubstitution
-
+from launch.conditions import IfCondition, UnlessCondition
 from launch_ros.actions import Node
 from launch_ros.substitutions import FindPackageShare
 
 
 def generate_launch_description():
-    # Launch Arguments
+    # Argumento del tiempo simulado
     use_sim_time = LaunchConfiguration('use_sim_time', default=True)
+
+    # Defino la ubicación de los modelos (por ejemplo un escritorio que quiera poner en el .world de gazebo)
+    gazebo_models_path = 'models'
+    pkg_share_gazebo = FindPackageShare('dp').find('dp')    
+    gazebo_models_path = os.path.join(pkg_share_gazebo, gazebo_models_path)
+    
+    # Si la variable ya existe, la extendemos; si no, la creamos
+    set_env_vars_resources = SetEnvironmentVariable(
+        'GZ_SIM_RESOURCE_PATH',
+        gazebo_models_path
+    )
+    print(f"GZ_SIM_RESOURCE_PATH set to: {gazebo_models_path}")
+
 
     # Obtener URDF via xacro
     robot_description_content = Command(
@@ -36,7 +49,7 @@ def generate_launch_description():
             ' ',
             PathJoinSubstitution(
                 [FindPackageShare('dp'),
-                 'urdf', 'double_pendulum.xacro']
+                 'urdf', LaunchConfiguration('xacro_file')]
             ),
         ]
     )
@@ -72,7 +85,12 @@ def generate_launch_description():
         executable='create',
         output='screen',
         arguments=['-topic', 'robot_description',
-                   '-name', 'double_pendulum', '-allow_renaming', 'true'],
+                    '-name', 'double_pendulum', '-allow_renaming', 'true'
+                    '-x', '0',      # Coordenada X
+                    '-y', '0',      # Coordenada Y
+                    '-z', '1.0'     # Coordenada Z (altura del escritorio)
+                    ],
+
     )
 
     joint_state_broadcaster_spawner = Node(
@@ -80,7 +98,8 @@ def generate_launch_description():
         executable='spawner',
         arguments=['joint_state_broadcaster'],
     )
-        
+
+    # Este es un típico control de lazo cerrado que toma referencias de posición y entrega esfuerzos a generar    
     joint_trajectory_controller_spawner = Node(
         package='controller_manager',
         executable='spawner',
@@ -89,6 +108,20 @@ def generate_launch_description():
             '--param-file',
             robot_controllers
             ],
+        condition=IfCondition(LaunchConfiguration('closed_loop'))
+    )
+    
+    # Con un "controlador de esfuerzos" en realidad puedo aplicar directamente torque en los ejes
+    # No hay tal cosa como un control de lazo cerrado
+    effort_controller_spawner = Node(
+        package='controller_manager',
+        executable='spawner',
+        arguments=[
+            'effort_controller',
+            '--param-file',
+            robot_controllers
+            ],
+        condition=UnlessCondition(LaunchConfiguration('closed_loop'))
     )
 
     # Bridge
@@ -107,14 +140,48 @@ def generate_launch_description():
         arguments=['-d', os.path.join(get_package_share_directory('dp'), 'config', 'display.rviz')]
     )
     
-    gui_control_node = Node(
+    gui_effort_reference_node = Node(
+        package='dp',
+        executable='gui_set_torque.py',
+        name='gui_set_torque',
+        output='screen',
+        condition=UnlessCondition(LaunchConfiguration('closed_loop'))
+    )
+
+    gui_joint_reference_node = Node(
         package='dp',
         executable='gui_control.py',
         name='gui_control',
         output='screen',
+        condition=IfCondition(LaunchConfiguration('closed_loop'))
     )
 
     return LaunchDescription([
+        # Argumentos de lanzamiento
+        DeclareLaunchArgument(
+            'use_sim_time',
+            default_value=use_sim_time,
+            description='True para usar un clock simulado'),
+        DeclareLaunchArgument(
+            'xacro_file',
+            default_value='dp_base.xacro',
+            description='Archivo de definición del robot'
+        ),
+        # Argumento para definir el tipo de control
+        DeclareLaunchArgument(
+            'closed_loop',
+            default_value='true',  # Valor por defecto
+            description='Tipo de control: true (posición) o false (esfuerzo ... open_loop)'
+        ),
+         # Declarar el argumento del mundo con un valor por defecto
+        DeclareLaunchArgument(
+            'world_name',
+            default_value='double_pendulum.world',
+            description='Nombre del archivo del mundo para Gazebo'
+        ),
+
+        set_env_vars_resources, # Setea las variables de entorno para los modelos de gazebo
+    
         IncludeLaunchDescription(
             PythonLaunchDescriptionSource(
                 [PathJoinSubstitution([
@@ -128,7 +195,7 @@ def generate_launch_description():
                 ['-r -v 1 ', PathJoinSubstitution([
                     FindPackageShare('dp'),
                     'worlds',
-                    'double_pendulum.world'
+                    LaunchConfiguration('world_name')
                 ])]
             )]
         ),
@@ -138,20 +205,18 @@ def generate_launch_description():
                 on_exit=[joint_state_broadcaster_spawner],
             )
         ),
-        RegisterEventHandler(
-            event_handler=OnProcessExit(
-                target_action=joint_state_broadcaster_spawner,
-                on_exit=[joint_trajectory_controller_spawner],
-            )
-        ),
+        #RegisterEventHandler(
+        #    event_handler=OnProcessExit(
+        #        target_action=joint_state_broadcaster_spawner,
+        #        on_exit=[joint_trajectory_controller_spawner],
+        #    )
+        #),
+        joint_trajectory_controller_spawner,
+        effort_controller_spawner,
         bridge,
         node_robot_state_publisher,
         gz_spawn_entity,
         rviz_node,
-        gui_control_node,
-        # Launch Arguments
-        DeclareLaunchArgument(
-            'use_sim_time',
-            default_value=use_sim_time,
-            description='If true, use simulated clock'),
+        gui_joint_reference_node,
+        gui_effort_reference_node,
     ])    
