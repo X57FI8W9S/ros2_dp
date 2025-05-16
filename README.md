@@ -42,7 +42,7 @@ $ xhost + && docker compose up dp --force-recreate
 
 Deberia inmediatamente inicializar la simulacion con el panel de control de RViz, Gazebo, PlotJuggler y una gui para cambiar parámetros, como se ve:
 
-![](docs/mycobot_280_demo.gif)
+![](dp_RViz.png)
 
 
 ## Como usar este repositorio para desarrollo:
