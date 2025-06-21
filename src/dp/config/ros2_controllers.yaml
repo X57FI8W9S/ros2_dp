@@ -31,7 +31,7 @@ position_controller:
         i_clamp: 15.0
         antiwindup: true
       joint3:
-        p: 36.0    # Puedes ajustar estos valores
+        p: 36.0    
         i: 276.0
         d: 1.95
         i_clamp: 15.0
